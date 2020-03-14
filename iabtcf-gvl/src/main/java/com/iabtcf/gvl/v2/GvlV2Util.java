@@ -47,47 +47,11 @@ public class GvlV2Util {
             objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
             URL gvlUrl = new URL(url);
             GvlData gvlData = objectMapper.readValue(gvlUrl, GvlData.class);
-            gvlData.setVendors(
-                gvlData.getVendors().entrySet().stream()
-                    .filter(e -> e.getValue().isActive())
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
-            );
-            return gvlData;
+            return cleanup(gvlData);
         } catch (IOException ioe) {
             return null;
         }
     }
-
-    /**
-     * Given an http url, it can fetch the global vendor list in json format and
-     * parse the json and convert it to a POJO
-     *
-     * @param url http url to fetch the global vendor list
-     * @return GvlData object
-     * @see GvlData
-     */
-    /*public static GvlData initializeVendorList(String url) {
-        try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
-            HttpGet httpget = new HttpGet(url);
-            ResponseHandler<String> responseHandler = response -> {
-                int status = response.getStatusLine().getStatusCode();
-                if (status >= 200 && status < 300) {
-                    HttpEntity entity = response.getEntity();
-                    return entity != null ? EntityUtils.toString(entity) : null;
-                } else {
-                    throw new ClientProtocolException("Unexpected response status: " + status);
-                }
-            };
-            String responseBody = httpclient.execute(httpget, responseHandler);
-            if (responseBody != null && !responseBody.isEmpty()) {
-                return initializeVendorList(responseBody.getBytes());
-            } else {
-                throw new IOException("empty vendor list");
-            }
-        } catch (IOException ioe) {
-            return null;
-        }
-    }*/
 
     /**
      * Converts global vendor list as a json byte array into a POJO
@@ -100,6 +64,10 @@ public class GvlV2Util {
         ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         GvlData gvlData = objectMapper.readValue(jsonData, GvlData.class);
+        return cleanup(gvlData);
+    }
+
+    private static GvlData cleanup(GvlData gvlData) {
         gvlData.setVendors(
             gvlData.getVendors().entrySet().stream()
                 .filter(e -> e.getValue().isActive())
