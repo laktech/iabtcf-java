@@ -25,8 +25,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.iabtcf.gvl.v2.GvlV2Util;
 import com.iabtcf.gvl.v2.dao.GvlData;
 import com.iabtcf.gvl.v2.dao.GvlVendorDataMap;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
 import java.io.IOException;
 import java.util.Map;
@@ -37,7 +35,6 @@ import java.util.concurrent.TimeUnit;
  * iab global vendor list url
  */
 
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class GvlSyncImplCache extends GvlAbstractCache {
 
     public static final GvlSyncImplCache INSTANCE = new GvlSyncImplCache();
@@ -46,6 +43,9 @@ public class GvlSyncImplCache extends GvlAbstractCache {
         .expireAfterWrite(396, TimeUnit.DAYS)
         .maximumSize(200L)
         .build();
+
+    private GvlSyncImplCache() {
+    }
 
     /**
      * Gets the global vendor list for a specific vendor list version and a specific vendor id

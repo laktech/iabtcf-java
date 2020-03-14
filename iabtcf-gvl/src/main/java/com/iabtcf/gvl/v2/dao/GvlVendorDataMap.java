@@ -20,41 +20,57 @@ package com.iabtcf.gvl.v2.dao;
  * #L%
  */
 
-import lombok.Getter;
-
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 /**
  * Represent a immutable Vendor Data object for a specific vendor list version and a specific vendor.
  * All the fields are provided as Map for easier and faster access to the values
  */
 public final class GvlVendorDataMap {
-    @Getter
+
     private final int vendorId;
-    @Getter
     private final Map<Integer, Integer> purposesMap;
-    @Getter
     private final Map<Integer, Integer> legIntPurposesMap;
-    @Getter
     private final Map<Integer, Integer> flexiblePurposesMap;
 
     public GvlVendorDataMap(int vendorId, List<Integer> purposes, List<Integer> liPurposes, List<Integer> flexiblePurposes) {
         this.vendorId = vendorId;
         if (purposes != null) {
-            purposesMap = purposes.stream().collect(Collectors.toMap(s -> s, s -> s));
+            purposesMap = toMap(purposes);
         } else {
             purposesMap = null;
         }
         if (liPurposes != null) {
-            legIntPurposesMap = liPurposes.stream().collect(Collectors.toMap(s -> s, s -> s));
+            legIntPurposesMap = toMap(liPurposes);
         } else {
             legIntPurposesMap = null;
         }
         if (flexiblePurposes != null) {
-            flexiblePurposesMap = flexiblePurposes.stream().collect(Collectors.toMap(s -> s, s -> s));
+            flexiblePurposesMap = toMap(flexiblePurposes);
         } else {
             flexiblePurposesMap = null;
         }
+    }
+
+    public int getVendorId() {
+        return vendorId;
+    }
+
+    public Map<Integer, Integer> getPurposesMap() {
+        return purposesMap;
+    }
+
+    public Map<Integer, Integer> getLegIntPurposesMap() {
+        return legIntPurposesMap;
+    }
+
+    public Map<Integer, Integer> getFlexiblePurposesMap() {
+        return flexiblePurposesMap;
+    }
+
+    private <T> Map<T, T> toMap(List<T> list) {
+        return list.stream().collect(Collectors.toMap(Function.identity(), Function.identity()));
     }
 }

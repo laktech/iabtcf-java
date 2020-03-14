@@ -21,13 +21,44 @@ package com.iabtcf.gvl.v2.dao;
  */
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import lombok.Data;
 
-@Data
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 public class GvlPurposeData {
+
     private int id;
     private String name;
     private String description;
     private String descriptionLegal;
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(final int id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(final String name) {
+        this.name = name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(final String description) {
+        this.description = description;
+    }
+
+    public String getDescriptionLegal() {
+        return descriptionLegal;
+    }
+
+    public void setDescriptionLegal(final String descriptionLegal) {
+        this.descriptionLegal = descriptionLegal;
+    }
 }

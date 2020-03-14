@@ -24,14 +24,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.iabtcf.gvl.v2.dao.GvlData;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.ResponseHandler;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.util.EntityUtils;
 import java.io.IOException;
+import java.net.URL;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -48,6 +42,31 @@ public class GvlV2Util {
      * @see GvlData
      */
     public static GvlData initializeVendorList(String url) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            URL gvlUrl = new URL(url);
+            GvlData gvlData = objectMapper.readValue(gvlUrl, GvlData.class);
+            gvlData.setVendors(
+                gvlData.getVendors().entrySet().stream()
+                    .filter(e -> e.getValue().isActive())
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+            );
+            return gvlData;
+        } catch (IOException ioe) {
+            return null;
+        }
+    }
+
+    /**
+     * Given an http url, it can fetch the global vendor list in json format and
+     * parse the json and convert it to a POJO
+     *
+     * @param url http url to fetch the global vendor list
+     * @return GvlData object
+     * @see GvlData
+     */
+    /*public static GvlData initializeVendorList(String url) {
         try (CloseableHttpClient httpclient = HttpClients.createDefault()) {
             HttpGet httpget = new HttpGet(url);
             ResponseHandler<String> responseHandler = response -> {
@@ -68,7 +87,7 @@ public class GvlV2Util {
         } catch (IOException ioe) {
             return null;
         }
-    }
+    }*/
 
     /**
      * Converts global vendor list as a json byte array into a POJO

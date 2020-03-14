@@ -22,16 +22,12 @@ package com.iabtcf.gvl.v2.dao;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 
-import java.time.ZonedDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
-@Data
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-@AllArgsConstructor
 public class GvlVendorData {
 
     private int id;
@@ -50,17 +46,90 @@ public class GvlVendorData {
     private String policyUrl;
     private String deletedDate;
 
-    public GvlVendorData(int id, List<Integer> purposes, List<Integer> legIntPurposes, List<Integer> flexiblePurposes) {
+    public int getId() {
+        return id;
+    }
+
+    public void setId(final int id) {
         this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(final String name) {
+        this.name = name;
+    }
+
+    public List<Integer> getPurposes() {
+        return purposes;
+    }
+
+    public void setPurposes(final List<Integer> purposes) {
         this.purposes = purposes;
+    }
+
+    public List<Integer> getLegIntPurposes() {
+        return legIntPurposes;
+    }
+
+    public void setLegIntPurposes(final List<Integer> legIntPurposes) {
         this.legIntPurposes = legIntPurposes;
+    }
+
+    public List<Integer> getFlexiblePurposes() {
+        return flexiblePurposes;
+    }
+
+    public void setFlexiblePurposes(final List<Integer> flexiblePurposes) {
         this.flexiblePurposes = flexiblePurposes;
+    }
+
+    public List<Integer> getSpecialPurposes() {
+        return specialPurposes;
+    }
+
+    public void setSpecialPurposes(final List<Integer> specialPurposes) {
+        this.specialPurposes = specialPurposes;
+    }
+
+    public List<Integer> getFeatures() {
+        return features;
+    }
+
+    public void setFeatures(final List<Integer> features) {
+        this.features = features;
+    }
+
+    public List<Integer> getSpecialFeatures() {
+        return specialFeatures;
+    }
+
+    public void setSpecialFeatures(final List<Integer> specialFeatures) {
+        this.specialFeatures = specialFeatures;
+    }
+
+    public String getPolicyUrl() {
+        return policyUrl;
+    }
+
+    public void setPolicyUrl(final String policyUrl) {
+        this.policyUrl = policyUrl;
+    }
+
+    public String getDeletedDate() {
+        return deletedDate;
+    }
+
+    public void setDeletedDate(final String deletedDate) {
+        this.deletedDate = deletedDate;
     }
 
     public boolean isDeleted() {
         return Optional.ofNullable(this.deletedDate)
-            .map(ZonedDateTime::parse)
-            .map(deleteAfterDate -> deleteAfterDate.isBefore(ZonedDateTime.now()))
+            .map(Instant::parse)
+            .map(deleteAfterDate -> deleteAfterDate.isBefore(Instant.now()))
             .orElse(false);
     }
 

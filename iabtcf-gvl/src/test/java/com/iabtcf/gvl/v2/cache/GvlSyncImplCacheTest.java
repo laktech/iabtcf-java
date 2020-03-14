@@ -34,7 +34,7 @@ import java.io.InputStreamReader;
 public class GvlSyncImplCacheTest {
 
     @Test
-    public void testGetVendorList() throws IOException {
+    public void testGetVendorList() {
         int version = 26;
         int vendorId = 8;
         GvlVendorDataMap

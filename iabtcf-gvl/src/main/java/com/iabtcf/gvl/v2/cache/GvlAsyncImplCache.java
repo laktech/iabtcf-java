@@ -23,8 +23,6 @@ package com.iabtcf.gvl.v2.cache;
 import com.github.benmanes.caffeine.cache.AsyncCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.iabtcf.gvl.v2.dao.GvlVendorDataMap;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -36,7 +34,6 @@ import java.util.concurrent.TimeoutException;
  * A reference implementation of GvlCache that builds cache in Asynchronous mode using the
  * iab global vendor list url
  */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class GvlAsyncImplCache extends GvlAbstractCache {
 
     public static final GvlAsyncImplCache INSTANCE = new GvlAsyncImplCache();
@@ -46,6 +43,8 @@ public class GvlAsyncImplCache extends GvlAbstractCache {
         .maximumSize(200L)
         .buildAsync();
 
+    private GvlAsyncImplCache() {
+    }
     /**
      * Gets the global vendor list for a specific vendor list version and a specific vendor id
      * In this Async cache, chances are the first event that triggers the cache building
