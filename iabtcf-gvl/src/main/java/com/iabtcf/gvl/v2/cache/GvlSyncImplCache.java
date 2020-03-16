@@ -58,9 +58,9 @@ public class GvlSyncImplCache extends GvlAbstractCache {
      */
     @Override
     public GvlVendorDataMap getVendorList(int version, int vendorId) {
-        Map<Integer, GvlVendorDataMap> vendorCache = gvlCache.get(version, k -> buildCache(version));
-        if (vendorCache != null) {
-            return vendorCache.get(vendorId);
+        Map<Integer, GvlVendorDataMap> gvlVendorCache = gvlCache.get(version, k -> buildCache(version));
+        if (gvlVendorCache != null) {
+            return gvlVendorCache.get(vendorId);
         }
         return null;
         // FIXME: Should we throw an exception if we can't build cache?
@@ -70,7 +70,7 @@ public class GvlSyncImplCache extends GvlAbstractCache {
      * The following methods are mostly used for test cases to pass along a static gvl json file
      */
     protected GvlVendorDataMap getVendorList(byte[] vendorListJson, int version, int vendorId) {
-        Map<Integer, GvlVendorDataMap> vendorCache = gvlCache.get(version, k -> {
+        Map<Integer, GvlVendorDataMap> gvlVendorCache = gvlCache.get(version, k -> {
             try {
                 return buildCache(vendorListJson);
             } catch (IOException e) {
@@ -78,8 +78,8 @@ public class GvlSyncImplCache extends GvlAbstractCache {
                 return null;
             }
         });
-        if (vendorCache != null) {
-            return vendorCache.get(vendorId);
+        if (gvlVendorCache != null) {
+            return gvlVendorCache.get(vendorId);
         }
         // FIXME: Should we throw an exception if can't build cache
         return null;

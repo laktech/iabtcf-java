@@ -40,8 +40,8 @@ public abstract class GvlAbstractCache implements GvlCache {
     @Override
     public Map<Integer, GvlVendorDataMap> buildCache(final int version) {
         String url = GvlV2Util.DEFAULT_BASE_GVL_URL + version + GvlV2Util.DEFAULT_GVL_URL_SUFFIX;
-        GvlData tcfPurposeVendorData = GvlV2Util.initializeVendorList(url);
-        return buildVendorsCache(tcfPurposeVendorData);
+        GvlData gvlData = GvlV2Util.initializeVendorList(url);
+        return buildVendorsCache(gvlData);
     }
 
     /**
@@ -61,9 +61,9 @@ public abstract class GvlAbstractCache implements GvlCache {
             if (vendors != null) {
                 vendors.forEach((k, v) -> {
                     GvlVendorDataMap
-                        tcfVendorDataMap =
+                        gvlVendorDataMap =
                         new GvlVendorDataMap(v.getId(), v.getPurposes(), v.getLegIntPurposes(), v.getFlexiblePurposes());
-                    result.put(k, tcfVendorDataMap);
+                    result.put(k, gvlVendorDataMap);
                 });
             }
         }
