@@ -9,9 +9,9 @@ package com.iabtcf.encoder;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,31 +30,56 @@ import com.iabtcf.utils.IntIterator;
 /**
  * Encodes a bit / range field, typically used for encoding vendor lists.
  */
-class BitFieldEncoder {
+class VendorFieldEncoder {
     private final BitSet vendors;
     private int maxVendorId;
+    private boolean defaultConsent = false;
+    private boolean emitRangeEncoding = false;
 
-    public BitFieldEncoder() {
-        this(new BitSet(), -1);
+    public VendorFieldEncoder() {
+        this(new BitSet(), 0);
     }
 
-    public BitFieldEncoder(BitFieldEncoder prototype) {
+    public VendorFieldEncoder(VendorFieldEncoder prototype) {
         this(prototype.vendors.length() == 0 ? new BitSet() : prototype.vendors.get(0, prototype.vendors.length()),
                 prototype.maxVendorId);
     }
 
-    private BitFieldEncoder(BitSet vendors, int maxVendorId) {
+    private VendorFieldEncoder(BitSet vendors, int maxVendorId) {
         this.vendors = vendors;
         this.maxVendorId = maxVendorId;
     }
 
-    public BitFieldEncoder add(int vendorId) {
+    /**
+     * Emit range encoding even if it consumes more bits than bitfield encoding.
+     */
+    public VendorFieldEncoder emitRangeEncoding(boolean value) {
+        this.emitRangeEncoding = value;
+
+        return this;
+    }
+
+    /**
+     * For V1, default consent for VendorIds not covered by a RangeEntry. VendorIds covered by a
+     * RangeEntry have a consent value the opposite of DefaultConsent. Defaults to false.
+     *
+     */
+    public VendorFieldEncoder defaultConsent(boolean value) {
+        this.defaultConsent = value;
+
+        return this;
+    }
+
+    public VendorFieldEncoder add(int vendorId) {
+        if (vendorId <= 0) {
+            throw new IndexOutOfBoundsException("vendorId < 1: " + vendorId);
+        }
         vendors.set(vendorId - 1);
 
         return this;
     }
 
-    public BitFieldEncoder add(Iterable<Integer> vendorIds) {
+    public VendorFieldEncoder add(Iterable<Integer> vendorIds) {
         for (Iterator<Integer> i = vendorIds.iterator(); i.hasNext();) {
             add(i.next());
         }
@@ -62,7 +87,7 @@ class BitFieldEncoder {
         return this;
     }
 
-    public BitFieldEncoder add(int... vendorIds) {
+    public VendorFieldEncoder add(int... vendorIds) {
         for (int i = 0; i < vendorIds.length; i++) {
             add(vendorIds[i]);
         }
@@ -70,7 +95,7 @@ class BitFieldEncoder {
         return this;
     }
 
-    public BitFieldEncoder add(IntIterable ii) {
+    public VendorFieldEncoder add(IntIterable ii) {
         for (IntIterator i = ii.intIterator(); i.hasNext();) {
             add(i.nextInt());
         }
@@ -80,11 +105,17 @@ class BitFieldEncoder {
 
     /**
      * Emit the specified max vendor id. By default, the maximum vendorId that was added is emitted.
+     *
+     * @VisibleForTesting
      */
-    public BitFieldEncoder setMaxVendorId(int maxVendorId) {
+    VendorFieldEncoder setMaxVendorId(int maxVendorId) {
         this.maxVendorId = maxVendorId;
 
         return this;
+    }
+
+    public BitWriter buildV1() {
+        return build(true);
     }
 
     /**
@@ -92,6 +123,10 @@ class BitFieldEncoder {
      * bit field or a range encoding; depending on which is smaller.
      */
     public BitWriter build() {
+        return build(false);
+    }
+
+    private BitWriter build(boolean emitDefaultConsent) {
         BitWriter bv = new BitWriter();
 
         if (vendors.length() == 0) {
@@ -100,7 +135,7 @@ class BitFieldEncoder {
             return bv;
         }
 
-        maxVendorId = maxVendorId == -1 ? vendors.length() : maxVendorId;
+        maxVendorId = Math.max(vendors.length(), maxVendorId);
 
         // create the range bit section
         BitWriter rangeBits = new BitWriter();
@@ -117,7 +152,7 @@ class BitFieldEncoder {
             } else {
                 rangeBits.write(true, FieldDefs.CORE_VENDOR_IS_RANGE_ENCODING);
                 rangeBits.write(idxSet + 1, FieldDefs.START_OR_ONLY_VENDOR_ID);
-                rangeBits.write(length, FieldDefs.END_VENDOR_ID);
+                rangeBits.write(idxClr, FieldDefs.END_VENDOR_ID);
             }
             numEntries++;
         } while ((idxSet = vendors.nextSetBit(idxClr)) > 0 && rangeBits.length() < vendors.length());
@@ -125,42 +160,31 @@ class BitFieldEncoder {
         // emit max vendor id
         bv.write(maxVendorId, FieldDefs.CORE_VENDOR_MAX_VENDOR_ID);
 
-        if (rangeBits.length() < vendors.length()) {
+        if (rangeBits.length() < vendors.length() || emitRangeEncoding) {
             // emit range bits
             bv.write(true, FieldDefs.IS_A_RANGE);
-
+            if (emitDefaultConsent) {
+                bv.write(defaultConsent, FieldDefs.V1_VENDOR_DEFAULT_CONSENT);
+            }
             bv.write(numEntries, FieldDefs.NUM_ENTRIES);
             bv.write(rangeBits);
         } else {
             // emit bit field
             bv.write(false, FieldDefs.IS_A_RANGE);
 
-            byte[] bits = vendors.toByteArray();
-            int rem = vendors.length() % Byte.SIZE;
-            int n = bits.length - 1;
+            int rem = vendors.length() % Long.SIZE;
             if (rem == 0) {
-                rem = Byte.SIZE;
+                rem = Long.SIZE;
             }
 
-            for (int i = 0; i < n; i++) {
-                bv.write(reverse(bits[i]), Byte.SIZE);
+            long[] bits = vendors.toLongArray();
+            for (int i = 0; i < bits.length - 1; i++) {
+                bv.write(Long.reverse(bits[i]), Long.SIZE);
             }
-
-            bv.write(reverse(bits[n]) >> (Byte.SIZE - rem), rem);
+            bv.write(Long.reverse(bits[bits.length - 1]) >> (Long.SIZE - rem), rem);
+            bv.enforcePrecision(maxVendorId - vendors.length());
         }
 
         return bv;
     }
-
-    static byte[] lookup = new byte[] {
-            0x0, 0x8, 0x4, 0xC, 0x2, 0xA, 0x6, 0xE,
-            0x1, 0x9, 0x5, 0xD, 0x3, 0xB, 0x7, 0xF};
-
-    /**
-     * Reverse the bits in n using lookup table technique.
-     */
-    private static byte reverse(byte n) {
-        return (byte) ((lookup[n & 0xF] << 4) | lookup[n >>> 4]);
-    }
-
 }

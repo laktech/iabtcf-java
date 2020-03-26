@@ -25,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.BitSet;
 
-import com.iabtcf.ByteBitVector;
 import com.iabtcf.FieldDefs;
 import com.iabtcf.utils.IntIterable;
 import com.iabtcf.utils.IntIterator;
@@ -35,7 +34,15 @@ import com.iabtcf.utils.IntIterator;
  * the ability to append bits of various types and sizes in an effort to construct the byte array.
  */
 class BitWriter {
-    private static final ByteBitVector EMPTY = new ByteBitVector(new byte[] {});
+    private static final long[] LONG_MASKS = new long[Long.SIZE + 1];
+
+    static {
+        for (int i = 0; i < Long.SIZE; i++) {
+            LONG_MASKS[i] = (1L << i) - 1;
+        }
+        LONG_MASKS[Long.SIZE] = ~0L;
+    }
+
     private final LongArrayList buffer = new LongArrayList();
     private int bitsRemaining = Long.SIZE;
     private long pending = 0L;
@@ -45,6 +52,11 @@ class BitWriter {
         this(0);
     }
 
+    /**
+     * The 'precision' parameter can be used for encoding fields that must occupy a fixed-number of
+     * bits. These padding bits are only honored in {@link BitWriter#write(BitWriter)} and
+     * {@link BitWriter#toByteArray()}
+     */
     public BitWriter(int precision) {
         this.precision = precision;
     }
@@ -57,7 +69,7 @@ class BitWriter {
      * Writes an iabtcf encoded String of length specified by 'field'.
      */
     public void write(String str, FieldDefs field) {
-        assert (field.getLength(EMPTY) / FieldDefs.CHAR.getLength(EMPTY) == str.length());
+        assert (field.getLength() / FieldDefs.CHAR.getLength() == str.length());
         byte[] b = str.getBytes(StandardCharsets.US_ASCII);
         for (int i = 0; i < b.length; i++) {
             write(b[i] - 'A', FieldDefs.CHAR);
@@ -93,11 +105,11 @@ class BitWriter {
      * @throws IndexOutOfBoundsException if 'of' contains an invalid index, <= 0.
      */
     public void write(IntIterable of, FieldDefs field) {
-        write(of, field.getLength(EMPTY));
+        write(of, field.getLength());
     }
 
     public void write(boolean data, FieldDefs field) {
-        assert (field.getLength(EMPTY) == 1);
+        assert (field.getLength() == 1);
         write(data);
     }
 
@@ -105,7 +117,7 @@ class BitWriter {
      * Writes an iabtcf encoded instant value.
      */
     public void write(Instant i, FieldDefs field) {
-        write(i, field.getLength(EMPTY));
+        write(i, field.getLength());
     }
 
     /**
@@ -116,17 +128,17 @@ class BitWriter {
     }
 
     /**
-     * Writes up 'field' length number of bits from 'data'.
+     * Writes up to 'field' length number of bits from 'data'.
      */
     public void write(long data, FieldDefs field) {
-        write(data, field.getLength(EMPTY));
+        write(data, field.getLength());
     }
 
     /**
-     * Writes up 'length' number of bits from 'data'.
+     * Writes up to 'length' number of bits from 'data'.
      */
     public void write(long data, int length) {
-        data &= (1L << length) - 1;
+        data &= LONG_MASKS[length];
         bitsRemaining -= length;
         precision -= length;
 
@@ -145,7 +157,9 @@ class BitWriter {
     public void write(BitWriter bw) {
         enforcePrecision();
 
-        buffer.add(bw.buffer);
+        for (int i = 0; i < bw.buffer.size(); i++) {
+            write(bw.buffer.getLong(i), Long.SIZE);
+        }
         write(bw.pending >>> bw.bitsRemaining, Long.SIZE - bw.bitsRemaining);
 
         enforcePrecision(bw.precision);
@@ -155,7 +169,7 @@ class BitWriter {
      * Returns the number of bits, including any padding bits that are to be written.
      */
     public int length() {
-        return buffer.size() + (Long.SIZE - bitsRemaining) + ((precision >= 0) ? precision : 0);
+        return buffer.size() * Long.SIZE + (Long.SIZE - bitsRemaining) + ((precision >= 0) ? precision : 0);
     }
 
     /**
@@ -166,7 +180,7 @@ class BitWriter {
 
         int bytesToWrite = (Long.SIZE + (Byte.SIZE - 1) - bitsRemaining) >> 3;
 
-        ByteBuffer bb = ByteBuffer.allocate(buffer.size() * Byte.SIZE + bytesToWrite);
+        ByteBuffer bb = ByteBuffer.allocate(buffer.size() * (Long.SIZE / Byte.SIZE) + bytesToWrite);
 
         for (int i = 0; i < buffer.size(); i++) {
             bb.putLong(buffer.getLong(i));
@@ -178,7 +192,7 @@ class BitWriter {
         return bb.array();
     }
 
-    private void enforcePrecision(int p) {
+    protected void enforcePrecision(int p) {
         if (p <= 0) {
             return;
         }

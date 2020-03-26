@@ -9,9 +9,9 @@ package com.iabtcf.encoder;
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,12 +31,30 @@ import java.util.Base64;
 
 import org.junit.Test;
 
+import com.iabtcf.ByteBitVector;
 import com.iabtcf.FieldDefs;
 import com.iabtcf.decoder.TCString;
 import com.iabtcf.utils.BitSetIntIterable;
 
 
 public class BitWriterTest {
+    @Test
+    public void testEncode16() {
+        BitWriter bw = new BitWriter();
+        bw.write(32, 16);
+        byte[] b = bw.toByteArray();
+        ByteBitVector bbv = new ByteBitVector(b);
+        int value = bbv.readBits16(0);
+        assertEquals(32, value);
+    }
+
+    @Test
+    public void testWrite64() {
+        BitWriter bv = new BitWriter();
+        bv.write(3, 1);
+        bv.write(648, Long.SIZE);
+        // TODO: test this
+    }
 
     /**
      * BOOzQoAOOzQoAAPAFSENCW-AIBACBAAABCA=
